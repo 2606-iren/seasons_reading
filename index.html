@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seasons Reading — Interactive Worksheet</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --ink: #1f2937;
+    --muted: #6b7280;
+    --accent: #4f7cff;
+    --accent-hover: #3a66e0;
+    --border: #d6dee8;
+    --ok: #16a34a;
+    --bad: #ef4444;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    background: linear-gradient(160deg, #eef2f7 0%, #dfe7f2 100%);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    color: var(--ink);
+  }
+
+  .page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 24px 16px 40px;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  h1 {
+    font-size: 22px;
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+
+  .progress {
+    font-size: 14px;
+    color: var(--muted);
+    background: #fff;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  }
+
+  .worksheet {
+    position: relative;
+    background: #fff;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(31, 41, 55, 0.15), 0 2px 8px rgba(31, 41, 55, 0.06);
+    line-height: 0;
+  }
+
+  .worksheet img.bg {
+    display: block;
+    width: 100%;
+    height: auto;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  .answer {
+    position: absolute;
+    border: none;
+    outline: none;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: clamp(12px, 2.2vw, 20px);
+    font-family: inherit;
+    color: var(--ink);
+    text-align: center;
+    transition: background .15s, box-shadow .15s;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    box-shadow: inset 0 0 0 1px rgba(79, 124, 255, 0.35);
+    line-height: normal;
+  }
+
+  .answer::placeholder {
+    color: rgba(79, 124, 255, 0.55);
+    font-weight: 600;
+    font-size: 0.8em;
+  }
+
+  .answer:hover { background: rgba(255, 255, 255, 0.9); }
+
+  .answer:focus {
+    background: #fff;
+    box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 4px rgba(79, 124, 255, 0.18);
+  }
+
+  .answer.correct {
+    background: rgba(220, 252, 231, 0.95);
+    box-shadow: inset 0 0 0 2px var(--ok);
+    color: #14532d;
+  }
+
+  .answer.wrong {
+    background: rgba(254, 226, 226, 0.95);
+    box-shadow: inset 0 0 0 2px var(--bad);
+    color: #7f1d1d;
+  }
+
+  .controls {
+    margin-top: 22px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  button {
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: transform .1s, background .15s, box-shadow .15s;
+  }
+  button:active { transform: scale(0.97); }
+
+  .primary {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 6px 18px rgba(79, 124, 255, 0.35);
+  }
+  .primary:hover { background: var(--accent-hover); }
+
+  .ghost {
+    background: #fff;
+    color: var(--ink);
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 6px rgba(0,0,0,.05);
+  }
+  .ghost:hover { background: #f7f9fc; }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 28px;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--ink);
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s, transform .25s;
+    box-shadow: 0 8px 24px rgba(0,0,0,.2);
+    z-index: 100;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 500px) {
+    .page { padding: 16px 10px 32px; }
+    h1 { font-size: 18px; }
+    .controls { gap: 8px; }
+    button { padding: 10px 16px; font-size: 14px; flex: 1 1 auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <header>
+    <h1>Seasons Reading</h1>
+    <span class="progress" id="progress">0 / 4 filled</span>
+  </header>
+
+  <div class="worksheet" id="worksheet">
+    <!-- 👇 Картинка в той же папке, что и этот HTML 👇 -->
+    <img class="bg" id="bg" src="seasons_reading.jpg" alt="Seasons Reading Worksheet">
+  </div>
+
+  <div class="controls">
+    <button class="primary" id="btnCheck">Check Answers</button>
+    <button class="ghost" id="btnReset">Reset</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  // Координаты (в %) + правильные ответы
+  const ZONES = [
+    { id: 1, x: 17.52, y: 67.35, w: 23.81, h: 3.07, answer: 'winter' },
+    { id: 2, x: 17.63, y: 72.50, w: 23.49, h: 2.74, answer: 'cold'   },
+    { id: 3, x: 24.31, y: 82.25, w: 17.46, h: 2.74, answer: 'jacket' },
+    { id: 4, x: 26.47, y: 86.30, w: 15.30, h: 3.40, answer: 'jeans'  }
+  ];
+
+  const worksheet  = document.getElementById('worksheet');
+  const progressEl = document.getElementById('progress');
+  const toastEl    = document.getElementById('toast');
+  const inputs     = [];
+
+  ZONES.forEach((z) => {
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.className = 'answer';
+    inp.placeholder = '?';
+    inp.autocomplete = 'off';
+    inp.spellcheck = false;
+    inp.dataset.id = z.id;
+    inp.dataset.answer = (z.answer ?? '').toString();
+
+    inp.style.left   = z.x + '%';
+    inp.style.top    = z.y + '%';
+    inp.style.width  = z.w + '%';
+    inp.style.height = z.h + '%';
+
+    inp.addEventListener('input', () => {
+      inp.classList.remove('correct', 'wrong');
+      updateProgress();
+    });
+
+    worksheet.appendChild(inp);
+    inputs.push(inp);
+  });
+
+  function updateProgress() {
+    const total  = inputs.length;
+    const filled = inputs.filter(i => i.value.trim() !== '').length;
+    progressEl.textContent = `${filled} / ${total} filled`;
+  }
+
+  let toastTimer;
+  function showToast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
+  }
+
+  // Проверка без учёта регистра и лишних пробелов
+  function normalize(s) {
+    return s.trim().toLowerCase().replace(/\s+/g, ' ');
+  }
+
+  document.getElementById('btnCheck').addEventListener('click', () => {
+    let correct = 0, wrong = 0, empty = 0;
+
+    inputs.forEach((inp) => {
+      inp.classList.remove('correct', 'wrong');
+      const val = inp.value.trim();
+      const expected = inp.dataset.answer;
+
+      if (val === '') { empty++; return; }
+      if (!expected) return;
+
+      const ok = normalize(val) === normalize(expected);
+      inp.classList.add(ok ? 'correct' : 'wrong');
+      ok ? correct++ : wrong++;
+    });
+
+    if (correct === 0 && wrong === 0 && empty > 0) {
+      showToast('Please fill in the answers first 🙂');
+      return;
+    }
+
+    if (wrong === 0 && empty === 0) {
+      showToast(`🎉 Perfect! All ${correct} answers are correct!`);
+    } else {
+      showToast(`✅ ${correct} correct · ❌ ${wrong} wrong${empty ? ` · ⚪ ${empty} empty` : ''}`);
+    }
+  });
+
+  document.getElementById('btnReset').addEventListener('click', () => {
+    inputs.forEach((inp) => {
+      inp.value = '';
+      inp.classList.remove('correct', 'wrong');
+    });
+    updateProgress();
+    showToast('Worksheet cleared');
+    inputs[0]?.focus();
+  });
+
+  const bgImg = document.getElementById('bg');
+  bgImg.addEventListener('error', () => {
+    showToast('⚠️ Image not found. Make sure "seasons_reading.jpg" is in the same folder.');
+  });
+
+  updateProgress();
+})();
+</script>
+</body>
+</html>
